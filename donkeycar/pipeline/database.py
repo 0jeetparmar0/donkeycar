@@ -43,10 +43,7 @@ class PilotDatabase:
         else:
             this_num = 0
         date = time.strftime('%y-%m-%d')
-        ext = 'h5' if getattr(self.cfg, 'SAVE_MODEL_AS_H5', False) \
-            else 'savedmodel'
-        name = f'pilot_{date}_{this_num}.{ext}'
-
+        name = f'pilot_{date}_{this_num}.h5'
         return os.path.join(self.cfg.MODELS_PATH, name), this_num
 
     def to_df(self) -> pd.DataFrame:
@@ -60,7 +57,7 @@ class PilotDatabase:
     def write(self):
         try:
             with open(self.path, "w") as data_file:
-                json.dump(self.entries, data_file, indent=4,
+                json.dump(self.entries, data_file,
                           default=lambda o: '<not serializable>')
                 logger.info(f'Writing database file: {self.path}')
         except Exception as e:
@@ -70,27 +67,21 @@ class PilotDatabase:
         self.entries.append(entry)
 
     def delete_entry(self, pilot_name):
-        to_delete_entry = self.get_entry(pilot_name)
-        if not to_delete_entry:
-            return
-        full_path = os.path.join(self.cfg.MODELS_PATH, pilot_name)
-        model_versions = glob.glob(f'{full_path}.*')
-        logger.info(f'Deleting {",".join(model_versions)}')
-        for model_version in model_versions:
-            if os.path.isdir(model_version):
-                shutil.rmtree(model_version, ignore_errors=True)
-            else:
-                os.remove(model_version)
-        self.entries.remove(to_delete_entry)
-        self.write()
-
-    def get_entry(self, pilot_name):
+        to_delete_entry = None
         for entry in self.entries:
             if entry['Name'] == pilot_name:
-                return entry
-        logger.warning(f'Could not find pilot {pilot_name}, known pilots:'
-                       f'{",".join(self.get_pilot_names())}')
-        return None
+                to_delete_entry = entry
+        if to_delete_entry:
+            full_path = os.path.join(self.cfg.MODELS_PATH, pilot_name)
+            model_versions = glob.glob(f'{full_path}.*')
+            logger.info(f'Deleting {",".join(model_versions)}')
+            for model_version in model_versions:
+                if os.path.isdir(model_version):
+                    shutil.rmtree(model_version, ignore_errors=True)
+                else:
+                    os.remove(model_version)
+            self.entries.remove(to_delete_entry)
+            self.write()
 
     def to_df_tubgrouped(self):
         def sorted_string(comma_separated_string):
@@ -127,7 +118,7 @@ class PilotDatabase:
             return datetime.fromtimestamp(t).strftime(fmt)
 
         def transfer_fmt(model_name):
-            return model_name.replace('.h5', '').replace('.savedmodel', '')
+            return model_name.replace('.h5', '')
 
         return {'Time': time_fmt, 'Transfer': transfer_fmt}
 
@@ -144,6 +135,3 @@ class PilotDatabase:
         pilot_text = pilot_df.to_string(formatters=self.formatter())
         pilot_names = pilot_df['Name'].tolist() if not pilot_df.empty else []
         return pilot_text, tub_text, pilot_names
-
-    def get_pilot_names(self):
-        return [entry['Name'] for entry in self.entries]

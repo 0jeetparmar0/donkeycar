@@ -1,4 +1,3 @@
-import atexit
 import json
 import mmap
 import os
@@ -7,6 +6,7 @@ import logging
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
 
 NEWLINE = '\n'
 NEWLINE_STRIP = '\r\n'
@@ -244,27 +244,21 @@ class Manifest(object):
         self.catalog_metadata = dict()
         self.deleted_indexes = set()
         self._updated_session = False
-        self._is_closed = False
         has_catalogs = False
 
         if self.manifest_path.exists():
-            self.seekeable = Seekable(self.manifest_path,
-                                      read_only=self.read_only)
+            self.seekeable = Seekable(self.manifest_path, read_only=self.read_only)
             if self.seekeable.has_content():
                 self._read_contents()
             has_catalogs = len(self.catalog_paths) > 0
-            logger.info(f'Found datastore at {self.base_path.as_posix()}')
+
         else:
             created_at = time.time()
             self.manifest_metadata['created_at'] = created_at
             if not self.base_path.exists():
                 self.base_path.mkdir(parents=True, exist_ok=True)
-                logger.info(f'Creating a new datastore at'
-                            f' {self.base_path.as_posix()}')
-            self.seekeable = Seekable(self.manifest_path,
-                                      read_only=self.read_only)
-            logger.info(f'Creating a new manifest at '
-                        f'{self.manifest_path.as_posix()}')
+                print(f'Created a new datastore at {self.base_path.as_posix()}')
+            self.seekeable = Seekable(self.manifest_path, read_only=self.read_only)
 
         if not has_catalogs:
             self._write_contents()
@@ -272,20 +266,13 @@ class Manifest(object):
         else:
             last_known_catalog = os.path.join(self.base_path,
                                               self.catalog_paths[-1])
-            logger.info(f'Using last catalog {last_known_catalog}')
+            print(f'Using catalog {last_known_catalog}')
             self.current_catalog = Catalog(last_known_catalog,
                                            read_only=self.read_only,
                                            start_index=self.current_index)
         # Create a new session_id, which will be added to each record in the
         # tub, when Tub.write_record() is called.
-        self.session_id = self.create_new_session_id()
-
-        def exit_hook():
-            if not self._is_closed:
-                logger.error(f"Unexpected closing manifest {self.base_path}")
-                self.close()
-        # Automatically save config when program ends
-        atexit.register(exit_hook)
+        self.session_id = self.create_new_session()
 
     def write_record(self, record):
         new_catalog = self.current_index > 0 \
@@ -309,9 +296,6 @@ class Manifest(object):
             record_indexes = {record_indexes}
         self.deleted_indexes.update(record_indexes)
         self._update_catalog_metadata(update=True)
-        if record_indexes:
-            logger.info(f'Deleting {len(record_indexes)} records: '
-                        f'{min(record_indexes)} - {max(record_indexes)}')
 
     def restore_records(self, record_indexes):
         # Does not actually delete the record, but marks it as deleted.
@@ -319,9 +303,6 @@ class Manifest(object):
             record_indexes = {record_indexes}
         self.deleted_indexes.difference_update(record_indexes)
         self._update_catalog_metadata(update=True)
-        if record_indexes:
-            logger.info(f'Restored records {min(record_indexes)} - '
-                        f'{max(record_indexes)}')
 
     def _add_catalog(self):
         current_length = len(self.catalog_paths)
@@ -349,19 +330,8 @@ class Manifest(object):
 
     def _read_contents(self):
         self.seekeable.seek_line_start(1)
-        manifest_inputs = json.loads(self.seekeable.readline())
-        manifest_types = json.loads(self.seekeable.readline())
-        if not self.inputs and not self.types:
-            self.inputs = manifest_inputs
-            self.types = manifest_types
-        else:
-            assert self.inputs == manifest_inputs \
-                and self.types == manifest_types, \
-                    f'Trying to create a tub with different inputs/types than ' \
-                    f'the stored tub. This is only allowed when new tub ' \
-                    f'specifies no inputs. New inputs: {self.inputs} vs ' \
-                    f'stored inputs: {manifest_inputs}, new types {self.types}'\
-                    f' vs stored types: {manifest_types}'
+        self.inputs = json.loads(self.seekeable.readline())
+        self.types = json.loads(self.seekeable.readline())
         self.metadata = json.loads(self.seekeable.readline())
         self.manifest_metadata = json.loads(self.seekeable.readline())
         # Catalog metadata
@@ -387,33 +357,26 @@ class Manifest(object):
         catalog_metadata['paths'] = self.catalog_paths
         catalog_metadata['current_index'] = self.current_index
         catalog_metadata['max_len'] = self.max_len
-        catalog_metadata['deleted_indexes'] = sorted(list(self.deleted_indexes))
+        catalog_metadata['deleted_indexes'] = list(self.deleted_indexes)
         self.catalog_metadata = catalog_metadata
         self.seekeable.writeline(json.dumps(catalog_metadata))
 
-    def _update_session_info(self):
+    def create_new_session(self):
         """ Creates a new session id and appends it to the metadata."""
         sessions = self.manifest_metadata.get('sessions', {})
-        if not sessions:
+        last_id = -1
+        if sessions:
+            last_id = sessions['last_id']
+        else:
             sessions['all_full_ids'] = []
-        this_id, this_full_id = self.session_id
+        this_id = last_id + 1
+        date = time.strftime('%y-%m-%d')
+        this_full_id = date + '_' + str(this_id)
         sessions['last_id'] = this_id
         sessions['last_full_id'] = this_full_id
         sessions['all_full_ids'].append(this_full_id)
         self.manifest_metadata['sessions'] = sessions
-
-    def create_new_session_id(self):
-        """ Creates a new session id and appends it to the metadata."""
-        sessions = self.manifest_metadata.get('sessions', {})
-        new_id = sessions['last_id'] + 1 if sessions else 0
-        new_full_id = f"{time.strftime('%y-%m-%d')}_{new_id}"
-        return new_id, new_full_id
-
-    def add_deleted_indexes(self, indexes):
-        if isinstance(indexes, int):
-            indexes = {indexes}
-        self.deleted_indexes.update(indexes)
-        self._update_catalog_metadata(update=True)
+        return this_full_id
 
     def close(self):
         """ Closing tub closes open files for catalog, catalog manifest and
@@ -421,17 +384,9 @@ class Manifest(object):
         # If records were received, write updated session_id dictionary into
         # the metadata, otherwise keep the session_id information unchanged
         if self._updated_session:
-            logger.info(f'Saving new session {self.session_id[1]}')
-            self._update_session_info()
-            self.write_metadata()
+            self.seekeable.update_line(4, json.dumps(self.manifest_metadata))
         self.current_catalog.close()
         self.seekeable.close()
-        self._is_closed = True
-        logger.info(f'Closing manifest {self.base_path}')
-
-    def write_metadata(self):
-        self.seekeable.update_line(3, json.dumps(self.metadata))
-        self.seekeable.update_line(4, json.dumps(self.manifest_metadata))
 
     def __iter__(self):
         return ManifestIterator(self)
@@ -484,7 +439,7 @@ class ManifestIterator(object):
                         record = json.loads(contents)
                         return record
                     except Exception:
-                        logger.error(f'Failed loading record {current_index}')
+                        print(f'Ignoring record at index {current_index}')
                         continue
             else:
                 self.current_catalog = None

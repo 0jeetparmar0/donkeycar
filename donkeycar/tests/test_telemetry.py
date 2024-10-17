@@ -3,10 +3,9 @@
 import time
 from unittest import mock
 from paho.mqtt.client import Client
-from paho.mqtt.enums import CallbackAPIVersion
-
 import donkeycar.templates.cfg_complete as cfg
 from donkeycar.parts.telemetry import MqttTelemetry
+import pytest
 from random import randint
 
 
@@ -17,8 +16,11 @@ def test_mqtt_telemetry():
     cfg.TELEMETRY_MQTT_JSON_ENABLE = True
 
     # Create receiver
-    sub = Client(callback_api_version=CallbackAPIVersion.VERSION2,
-                 clean_session=True)
+    sub = Client(clean_session=True)
+
+    # def on_message(client, userdata, message):
+    #     data = message.payload
+    #     print(message)
 
     on_message_mock = mock.Mock()
     sub.on_message = on_message_mock
