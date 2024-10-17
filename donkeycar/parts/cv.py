@@ -127,14 +127,14 @@ class ImgBGR2RGB:
         pass
 
 
-class ImgRGB2BGR:
+class ImgRGB2YUV:
 
     def run(self, img_arr):
         if img_arr is None:
             return None
 
         try:
-            return cv2.cvtColor(img_arr, cv2.COLOR_RGB2BGR)
+            return cv2.cvtColor(img_arr, cv2.COLOR_RGB2YUV)
         except:
             logger.error("Unable to convert RGB image to BRG")
             return None
@@ -698,7 +698,7 @@ if __name__ == "__main__":
                         help = "path to image file to user rather that a camera")
     parser.add_argument("-a", "--aug", required=True, type=str.upper, 
                         choices=['CROP', 'TRAPEZE',
-                                 "RGB2HSV", "HSV2RGB", "RGB2BGR", "BGR2RGB", "BGR2HSV", "HSV2BRG",
+                                 "RGB2HSV", "HSV2RGB", "RGB2YUV", "BGR2RGB", "BGR2HSV", "HSV2BRG",
                                  "RGB2GREY", "BGR2GREY", "HSV2GREY",
                                  "CANNY",
                                  "BLUR", "GBLUR",
@@ -824,8 +824,8 @@ if __name__ == "__main__":
     #
     # color space transformations
     #
-    elif "RGB2BGR" == transformation:
-        transformer = ImgRGB2BGR()
+    elif "RGB2YUV" == transformation:
+        transformer = ImgRGB2YUV()
     elif "BGR2RGB" == transformation:
         transformer = ImgBGR2RGB()
     elif "RGB2HSV" == transformation:

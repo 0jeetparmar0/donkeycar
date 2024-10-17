@@ -69,8 +69,8 @@ def image_transformer(name: str, config):
     #
     # color space transformations
     #
-    elif "RGB2BGR" == name:
-        return cv_parts.ImgRGB2BGR()
+    elif "RGB2YUV" == name:
+        return cv_parts.ImgRGB2YUV()
     elif "BGR2RGB" == name:
         return cv_parts.ImgBGR2RGB()
     elif "RGB2HSV" == name:
@@ -280,8 +280,8 @@ def img_transform_from_json(transform_config):
     #
     # color space transformations
     #
-    elif "RGB2BGR" == transformation:
-        transformer = cv_parts.ImgRGB2BGR()
+    elif "RGB2YUV" == transformation:
+        transformer = cv_parts.ImgRGB2YUV()
     elif "BGR2RGB" == transformation:
         transformer = cv_parts.ImgBGR2RGB()
     elif "RGB2HSV" == transformation:
