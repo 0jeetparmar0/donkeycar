@@ -24,7 +24,8 @@ class ImgGreyscale:
             return None
 
         try:
-            return cv2.cvtColor(img_arr, cv2.COLOR_RGB2GRAY)
+            img_arr = cv2.cvtColor(img_arr, cv2.COLOR_RGB2GRAY)
+            return img_arr
         except:
             logger.error("Unable to convert RGB image to greyscale")
             return None
@@ -39,7 +40,7 @@ class ImgGRAY2RGB:
             return None
 
         try:
-            return cv2.cvtColor(img_arr, cv2.COLOR_GRAY2RGB)
+            img_arr = cv2.cvtColor(img_arr, cv2.COLOR_GRAY2RGB)
         except:
             logger.error(F"Unable to convert greyscale image of shape {img_arr.shape} to RGB")
             return None
@@ -54,7 +55,7 @@ class ImgGRAY2BGR:
             return None
 
         try:
-            return cv2.cvtColor(img_arr, cv2.COLOR_GRAY2BGR)
+            img_arr = cv2.cvtColor(img_arr, cv2.COLOR_GRAY2BGR)
         except:
             logger.error(F"Unable to convert greyscale image of shape {img_arr.shape} to RGB")
             return None
@@ -74,7 +75,8 @@ class ImgBGR2GRAY:
             return None
 
         try:
-            return cv2.cvtColor(img_arr, cv2.COLOR_BGR2GRAY)
+            img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2GRAY)
+            return img_arr
         except:
             logger.error("Unable to convert BGR image to greyscale")
             return None
@@ -90,7 +92,8 @@ class ImgHSV2GRAY:
             return None
 
         try:
-            return cv2.cvtColor(img_arr, cv2.COLOR_HSV2GRAY)
+            img_arr = cv2.cvtColor(img_arr, cv2.COLOR_HSV2GRAY)
+            return img_arr
         except:
             logger.error("Unable to convert HSV image to greyscale")
             return None
@@ -118,7 +121,8 @@ class ImgBGR2RGB:
             return None
 
         try:
-            return cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
+            img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
+            return img_arr
         except:
             logger.error("Unable to convert BGR image to RGB")
             return None
@@ -127,14 +131,15 @@ class ImgBGR2RGB:
         pass
 
 
-class ImgRGB2YUV:
+class ImgRGB2BGR:
 
     def run(self, img_arr):
         if img_arr is None:
             return None
 
         try:
-            return cv2.cvtColor(img_arr, cv2.COLOR_RGB2YUV)
+            img_arr = cv2.cvtColor(img_arr, cv2.COLOR_RGB2BGR)
+            return img_arr
         except:
             logger.error("Unable to convert RGB image to BRG")
             return None
@@ -150,7 +155,8 @@ class ImgHSV2RGB:
             return None
 
         try:
-            return cv2.cvtColor(img_arr, cv2.COLOR_HSV2RGB)
+            img_arr = cv2.cvtColor(img_arr, cv2.COLOR_HSV2RGB)
+            return img_arr
         except:
             logger.error("Unable to convert HSV image to RGB")
             return None
@@ -166,7 +172,8 @@ class ImgRGB2HSV:
             return None
 
         try:
-            return cv2.cvtColor(img_arr, cv2.COLOR_RGB2HSV)
+            img_arr = cv2.cvtColor(img_arr, cv2.COLOR_RGB2HSV)
+            return img_arr
         except:
             logger.error("Unable to convert RGB image to HSV")
             return None
@@ -182,7 +189,8 @@ class ImgHSV2BGR:
             return None
 
         try:
-            return cv2.cvtColor(img_arr, cv2.COLOR_HSV2BGR)
+            img_arr = cv2.cvtColor(img_arr, cv2.COLOR_HSV2BGR)
+            return img_arr
         except:
             logger.error("Unable to convert HSV image to BGR")
             return None
@@ -198,7 +206,8 @@ class ImgBGR2HSV:
             return None
 
         try:
-            return cv2.cvtColor(img_arr, cv2.COLOR_BGR2HSV)
+            img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2HSV)
+            return img_arr
         except:
             logger.error("Unable to convert BGR image to HSV")
             return None
@@ -397,62 +406,6 @@ class ImgTrapezoidalMask:
                     [self.top_right, self.top],
                     [self.bottom_right, self.bottom],
                     [self.bottom_left, self.bottom]
-                ]
-                cv2.fillConvexPoly(mask,
-                                    np.array(points, dtype=np.int32),
-                                    self.fill)
-                mask = np.asarray(mask, dtype='bool')
-                self.masks[key] = mask
-
-            mask = self.masks[key]
-            transformed = np.multiply(image, mask)
-
-        return transformed
-    
-    def shutdown(self):
-        self.masks = {}  # free cached masks
-
-
-class ImgTrapezoidalEdgeMask:
-    def __init__(self, upper_left, upper_right, lower_left, lower_right, top, bottom, fill=[255,255,255]) -> None:
-        """
-        Apply a trapezoidal mask to an image, where bounds are
-        relative the the edge of the image, conserving the 
-        image pixels within the trapezoid and masking everything 
-        other pixels with the fill color
-        """
-        self.lower_left = lower_left
-        self.lower_right = lower_right
-        self.upper_left = upper_left
-        self.upper_right = upper_right
-        self.top = top
-        self.bottom = bottom
-        self.fill = fill
-        self.masks = {}
-
-    def run(self, image):
-        """
-        Apply trapezoidal mask
-        # # # # # # # # # # # # #
-        # xxxxxxxxxxxxxxxxxxxxxxx
-        # xxxx ul     ur xxxxxxxx min_y
-        # xxx             xxxxxxx
-        # xx               xxxxxx
-        # x                 xxxxx
-        # ll                lr xx max_y
-        """
-        transformed = None
-        if image is not None:
-            mask = None
-            key = str(image.shape)
-            if self.masks.get(key) is None:
-                height, width, depth = image_shape(image)
-                mask = np.zeros(image.shape, dtype=np.int32)
-                points = [
-                    [self.upper_left, self.top],
-                    [width - self.upper_right, self.top],
-                    [width - self.lower_right, height - self.bottom],
-                    [self.lower_left, height - self.bottom]
                 ]
                 cv2.fillConvexPoly(mask,
                                     np.array(points, dtype=np.int32),
@@ -698,7 +651,7 @@ if __name__ == "__main__":
                         help = "path to image file to user rather that a camera")
     parser.add_argument("-a", "--aug", required=True, type=str.upper, 
                         choices=['CROP', 'TRAPEZE',
-                                 "RGB2HSV", "HSV2RGB", "RGB2YUV", "BGR2RGB", "BGR2HSV", "HSV2BRG",
+                                 "RGB2HSV", "HSV2RGB", "RGB2BGR", "BGR2RGB", "BGR2HSV", "HSV2BRG",
                                  "RGB2GREY", "BGR2GREY", "HSV2GREY",
                                  "CANNY",
                                  "BLUR", "GBLUR",
@@ -793,21 +746,12 @@ if __name__ == "__main__":
     #
     # masking tranformations
     #
-    if "TRAPEZE" == transformation or "TRAPEZE_EDGE" == transformation or "CROP" == transformation: 
+    if "TRAPEZE" == transformation or "CROP" == transformation: 
         #
         # masking transformations
         #
         if "TRAPEZE" == transformation:
             transformer = ImgTrapezoidalMask(
-                args.left if args.left is not None else 0,
-                args.right if args.right is not None else width,
-                args.left_bottom if args.left_bottom is not None else 0,
-                args.right_bottom if args.right_bottom is not None else width,
-                args.top if args.top is not None else 0,
-                args.bottom if args.bottom is not None else height
-            )
-        elif "TRAPEZE_EDGE" == transformation:
-            transformer = ImgTrapezoidalEdgeMask(
                 args.left if args.left is not None else 0,
                 args.right if args.right is not None else width,
                 args.left_bottom if args.left_bottom is not None else 0,
@@ -824,8 +768,8 @@ if __name__ == "__main__":
     #
     # color space transformations
     #
-    elif "RGB2YUV" == transformation:
-        transformer = ImgRGB2YUV()
+    elif "RGB2BGR" == transformation:
+        transformer = ImgRGB2BGR()
     elif "BGR2RGB" == transformation:
         transformer = ImgBGR2RGB()
     elif "RGB2HSV" == transformation:
@@ -838,7 +782,7 @@ if __name__ == "__main__":
         transformer = ImgHSV2BGR()
     elif "RGB2GREY" == transformation:
         transformer = ImgRGB2GRAY()
-    elif "BGR2GREY" == transformation:
+    elif "RBGR2GREY" == transformation:
         transformer = ImgBGR2GRAY()
     elif "HSV2GREY" == transformation:
         transformer = ImgHSV2GRAY()

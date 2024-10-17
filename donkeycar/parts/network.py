@@ -394,7 +394,6 @@ def test_pub_sub(ip):
             print("got:", res)
             time.sleep(1)
 
-
 def test_udp_broadcast(ip):
     
     if ip is None:
@@ -402,7 +401,7 @@ def test_udp_broadcast(ip):
         p = UDPValuePub('camera')
         from donkeycar.parts.camera import PiCamera
         from donkeycar.parts.image import ImgArrToJpg
-        cam = PiCamera(160, 120, 3)
+        cam = PiCamera(160, 120, 3, framerate=4)
         img_conv = ImgArrToJpg()
         time.sleep(1)
         
@@ -421,14 +420,13 @@ def test_udp_broadcast(ip):
             res = s.run()
             time.sleep(0.1)
 
-
 def test_tcp_client_server(ip):
 
     if ip is None:
         p = TCPServeValue("camera")
         from donkeycar.parts.camera import PiCamera
         from donkeycar.parts.image import ImgArrToJpg
-        cam = PiCamera(160, 120, 3)
+        cam = PiCamera(160, 120, 3, framerate=4)
         img_conv = ImgArrToJpg()
         while True:
             cam_img = cam.run()
@@ -441,7 +439,6 @@ def test_tcp_client_server(ip):
             c.run()
             time.sleep(0.01)
 
-
 def test_mqtt_pub_sub(ip):
     
     if ip is None:
@@ -449,7 +446,7 @@ def test_mqtt_pub_sub(ip):
         p = MQTTValuePub('donkey/camera')
         from donkeycar.parts.camera import PiCamera
         from donkeycar.parts.image import ImgArrToJpg
-        cam = PiCamera(160, 120, 3)
+        cam = PiCamera(160, 120, 3, framerate=4)
         img_conv = ImgArrToJpg()
         while True:
             cam_img = cam.run()
@@ -465,7 +462,6 @@ def test_mqtt_pub_sub(ip):
             res = s.run()
             print("got:", res)
             time.sleep(0.1)
-
 
 if __name__ == "__main__":
     import time

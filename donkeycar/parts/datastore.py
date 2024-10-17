@@ -219,7 +219,7 @@ class Tub(object):
             elif typ in ['str', 'float', 'int', 'boolean', 'vector']:
                 json_data[key] = val
 
-            elif typ == 'image':
+            elif typ is 'image':
                 path = self.make_file_path(key)
                 val.save(path)
                 json_data[key]=path

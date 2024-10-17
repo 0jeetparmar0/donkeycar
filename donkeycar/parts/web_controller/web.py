@@ -102,11 +102,12 @@ class RemoteWebServer():
 class LocalWebController(tornado.web.Application):
 
     def __init__(self, port=8887, mode='user'):
-        """
+        '''
         Create and publish variables needed on many of
         the web handlers.
-        """
-        logger.info('Starting Donkey Server...')
+        '''
+
+        print('Starting Donkey Server...', end='')
 
         this_dir = os.path.dirname(os.path.realpath(__file__))
         self.static_file_path = os.path.join(this_dir, 'templates', 'static')
@@ -140,11 +141,11 @@ class LocalWebController(tornado.web.Application):
 
         settings = {'debug': True}
         super().__init__(handlers, **settings)
-        logger.info(f"You can now go to {gethostname()}.local:{port} to "
-                    f"drive your car.")
+        print("... you can now go to {}.local:{} to drive "
+              "your car.".format(gethostname(), port))
 
     def update(self):
-        """ Start the tornado webserver. """
+        ''' Start the tornado webserver. '''
         asyncio.set_event_loop(asyncio.new_event_loop())
         self.listen(self.port)
         self.loop = IOLoop.instance()
@@ -158,8 +159,7 @@ class LocalWebController(tornado.web.Application):
                     logger.debug(f"Updating web client: {data_str}")
                     wsclient.write_message(data_str)
                 except Exception as e:
-                    logger.warning("Error writing websocket message",
-                                   exc_info=e)
+                    logger.warn("Error writing websocket message", exc_info=e)
                     pass
 
     def run_threaded(self, img_arr=None, num_records=0, mode=None, recording=None):
@@ -280,7 +280,7 @@ class WebSocketDriveAPI(tornado.websocket.WebSocketHandler):
         return True
 
     def open(self):
-        logger.info("New client connected")
+        print("New client connected")
         self.application.wsclients.append(self)
 
     def on_message(self, message):
@@ -297,7 +297,7 @@ class WebSocketDriveAPI(tornado.websocket.WebSocketHandler):
             latch_buttons(self.application.buttons, data['buttons'])
 
     def on_close(self):
-        logger.info("Client disconnected")
+        # print("Client disconnected")
         self.application.wsclients.remove(self)
 
 
@@ -306,10 +306,10 @@ class WebSocketCalibrateAPI(tornado.websocket.WebSocketHandler):
         return True
 
     def open(self):
-        logger.info("New client connected")
+        print("New client connected")
 
     def on_message(self, message):
-        logger.info(f"wsCalibrate {message}")
+        print(f"wsCalibrate {message}")
         data = json.loads(message)
         if 'throttle' in data:
             print(data['throttle'])
@@ -347,14 +347,13 @@ class WebSocketCalibrateAPI(tornado.websocket.WebSocketHandler):
                     self.application.drive_train.MAX_REVERSE = config['MM1_MAX_REVERSE']
 
     def on_close(self):
-        logger.info("Client disconnected")
+        print("Client disconnected")
 
 
 class VideoAPI(RequestHandler):
     '''
     Serves a MJPEG of the images posted from the vehicle.
     '''
-
     async def get(self):
         placeholder_image = utils.load_image_sized(
                         os.path.join(self.application.static_file_path,
@@ -367,7 +366,7 @@ class VideoAPI(RequestHandler):
         my_boundary = "--boundarydonotcross\n"
         while True:
 
-            interval = .005
+            interval = .01
             if served_image_timestamp + interval < time.time():
                 #
                 # if we have an image, then use it.
@@ -421,10 +420,9 @@ class WebFpv(Application):
         ]
 
         settings = {'debug': True}
-        self.img_arr = None
         super().__init__(handlers, **settings)
-        logger.info(f"Started Web FPV server. You can now go to "
-                    f"{gethostname()}.local:{self.port} to view the car camera")
+        print("Started Web FPV server. You can now go to {}.local:{} to "
+              "view the car camera".format(gethostname(), self.port))
 
     def update(self):
         """ Start the tornado webserver. """
